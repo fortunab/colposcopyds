@@ -655,6 +655,35 @@ class RuleBasedLayer(Layer):
         else:
             return 0
 
+# tversky focal
+
+import tensorflow as tf
+from keras import backend as K
+
+def focal_tversky_loss(y_true, y_pred, alpha=0.7, beta=0.3, gamma=1.0):
+    """
+    Parameters:
+        y_true (tensor): Ground truth labels.
+        y_pred (tensor): Predicted labels.
+        alpha (float): Weight for false positives.
+        beta (float): Weight for false negatives.
+        gamma (float): Controls the magnitude of the penalty for false negatives.
+        
+    Returns:
+        Focal Tversky loss value.
+    """
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    tp = tf.reduce_sum(y_true * y_pred)
+    fn = tf.reduce_sum(y_true * (1 - y_pred))
+    fp = tf.reduce_sum((1 - y_true) * y_pred)
+    
+    tversky = (tp + K.epsilon()) / (tp + alpha * fn + beta * fp + K.epsilon())
+    focal_tversky = tf.pow((1 - tversky), gamma)
+    
+    return focal_tversky
+
 """BOVNet"""
 
 model = Sequential()
@@ -671,7 +700,7 @@ model.add(Dense(64, activation='relu'))
 model.add(RuleBasedLayer())
 
 # Compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.001), loss=focal_tversky_loss, metrics=['accuracy'])
 model.summary()
 
 from keras.datasets import mnist
@@ -2601,7 +2630,7 @@ model.add(Dense(64, activation='relu'))
 model.add(RuleBasedLayer())
 
 # Compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.001), loss=focal_tversky_loss, metrics=['accuracy'])
 model.summary()
 
 import time
